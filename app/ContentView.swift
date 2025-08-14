@@ -95,6 +95,27 @@ struct ContentView: View {
                         .cornerRadius(10)
                     }
                     
+                    // Network status
+                    VStack(spacing: 8) {
+                        HStack {
+                            Circle()
+                                .fill(roboflowManager.getNetworkManager().isConnected ? Color.green : Color.red)
+                                .frame(width: 12, height: 12)
+                            Text(roboflowManager.getNetworkManager().connectionStatus)
+                                .font(.caption)
+                                .foregroundColor(.white)
+                        }
+                        
+                        if !roboflowManager.getNetworkManager().lastSentState.isEmpty {
+                            Text("Last sent: \(roboflowManager.getNetworkManager().lastSentState)")
+                                .font(.caption)
+                                .foregroundColor(.yellow)
+                        }
+                    }
+                    .padding()
+                    .background(Color.black.opacity(0.5))
+                    .cornerRadius(10)
+                    
                     // Roboflow status
                     VStack(spacing: 8) {
                         HStack {
@@ -116,6 +137,13 @@ struct ContentView: View {
                             Text("Last detection: \(roboflowManager.lastInferenceResults.count) objects")
                                 .font(.caption)
                                 .foregroundColor(.yellow)
+                        }
+                        
+                        if !roboflowManager.lastDetectedDoorState.isEmpty {
+                            Text("Door state: \(roboflowManager.lastDetectedDoorState)")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                                .fontWeight(.bold)
                         }
                     }
                     .padding()

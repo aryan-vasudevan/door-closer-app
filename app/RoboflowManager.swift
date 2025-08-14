@@ -7,10 +7,11 @@ class RoboflowManager: ObservableObject {
     @Published var isLoading = false
     @Published var lastInferenceResults: [RFPrediction] = []
     @Published var inferenceStatus = ""
+    @Published var lastDetectedDoorState = ""
     
     private var rf: RoboflowMobile?
     private var mlModel: RFModel?
-    private var onDoorStateDetected: ((String) -> Void)?
+    private var networkManager = NetworkManager()
     
     // Configuration from RoboflowConfig
     private let apiKey = RoboflowConfig.apiKey
@@ -24,6 +25,10 @@ class RoboflowManager: ObservableObject {
     
     init() {
         setupRoboflow()
+        // Test connection to ESP32 on startup
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.networkManager.testConnection()
+        }
     }
     
     private func setupRoboflow() {
@@ -116,6 +121,9 @@ class RoboflowManager: ObservableObject {
                     print("📊 Total detections: \(detections.count)")
                     print("⏰ Timestamp: \(Date())")
                     
+                    // Check for door state
+                    self?.checkDoorState(detections)
+                    
                     for (index, detection) in detections.enumerated() {
                         let values = detection.getValues()
                         print("🔍 Detection \(index + 1):")
@@ -152,13 +160,58 @@ class RoboflowManager: ObservableObject {
         }
     }
     
+    private func checkDoorState(_ detections: [RFPrediction]) {
+        // Look for door-related classes in the detections
+        for detection in detections {
+            let values = detection.getValues()
+            if let className = values["class"] as? String {
+                let lowercasedClass = className.lowercased()
+                
+                // Check if this detection indicates an open door
+                if lowercasedClass.contains("open") || lowercasedClass.contains("opened") {
+                    print("🚪 Door state detected: OPEN")
+                    self.lastDetectedDoorState = "open"
+                    
+                    // Send event to ESP32
+                    print("📡 Sending 'open' event to ESP32...")
+                    self.networkManager.sendDoorState("open")
+                    return
+                } else if lowercasedClass.contains("closed") || lowercasedClass.contains("shut") {
+                    print("🚪 Door state detected: CLOSED")
+                    self.lastDetectedDoorState = "closed"
+                    
+                    // Send event to ESP32
+                    print("📡 Sending 'closed' event to ESP32...")
+                    self.networkManager.sendDoorState("closed")
+                    return
+                }
+            }
+        }
+        
+        // If no specific door state found, check if any detection has high confidence
+        for detection in detections {
+            let values = detection.getValues()
+            if let confidence = values["confidence"] as? Double, confidence > 0.7 {
+                if let className = values["class"] as? String {
+                    print("🚪 High confidence detection: \(className) (\(String(format: "%.2f", confidence)))")
+                    // You might want to send this as "open" if it's a door-related class
+                    if className.lowercased().contains("door") {
+                        print("📡 Sending 'open' event to ESP32 based on door detection...")
+                        self.networkManager.sendDoorState("open")
+                        return
+                    }
+                }
+            }
+        }
+    }
+    
     func reloadModel() {
         isModelLoaded = false
         mlModel = nil
         loadModel()
     }
     
-    func setDoorStateCallback(_ callback: @escaping (String) -> Void) {
-        onDoorStateDetected = callback
+    func getNetworkManager() -> NetworkManager {
+        return networkManager
     }
 }
