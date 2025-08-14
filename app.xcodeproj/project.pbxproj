@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B86929852E4E235200B3CFC0 /* Roboflow in Frameworks */ = {isa = PBXBuildFile; productRef = B86929842E4E235200B3CFC0 /* Roboflow */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B86928D52E4CCDA100B3CFC0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B86929852E4E235200B3CFC0 /* Roboflow in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = app;
 			packageProductDependencies = (
+				B86929842E4E235200B3CFC0 /* Roboflow */,
 			);
 			productName = app;
 			productReference = B86928C72E4CCDA000B3CFC0 /* app.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = B86928BE2E4CCDA000B3CFC0;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B86929832E4E235200B3CFC0 /* XCRemoteSwiftPackageReference "roboflow-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B86928C82E4CCDA000B3CFC0 /* Products */;
 			projectDirPath = "";
@@ -562,6 +571,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B86929832E4E235200B3CFC0 /* XCRemoteSwiftPackageReference "roboflow-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/roboflow/roboflow-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B86929842E4E235200B3CFC0 /* Roboflow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B86929832E4E235200B3CFC0 /* XCRemoteSwiftPackageReference "roboflow-swift" */;
+			productName = Roboflow;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B86928BF2E4CCDA000B3CFC0 /* Project object */;
 }

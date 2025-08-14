@@ -12,11 +12,11 @@ struct ContentView: View {
     @StateObject private var cameraManager = CameraManager()
     @StateObject private var timerManager = TimerManager()
     @StateObject private var imageSaver = ImageSaver()
+    @StateObject private var roboflowManager = RoboflowManager()
     
-    @State private var showingSettings = false
     @State private var hasCameraPermission = false
-    @State private var maxImages = 50
-    @State private var shouldStopAfterMax = false
+    @State private var isContinuousCapture = false
+
     
     var body: some View {
         ZStack {
@@ -29,17 +29,11 @@ struct ContentView: View {
                     .ignoresSafeArea()
             }
             
+
+            
             VStack {
                 // Top controls
                 HStack {
-                    Button("Settings") {
-                        showingSettings = true
-                    }
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(Color.black.opacity(0.5))
-                    .cornerRadius(10)
-                    
                     Spacer()
                     
                     if timerManager.isRunning {
@@ -52,7 +46,7 @@ struct ContentView: View {
                                 .background(Color.orange.opacity(0.8))
                                 .cornerRadius(10)
                         } else {
-                            Text("Capturing: \(timerManager.photosTaken)/\(maxImages)")
+                            Text("Capturing: \(timerManager.photosTaken) photos")
                                 .font(.largeTitle)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
@@ -68,25 +62,7 @@ struct ContentView: View {
                 
                 // Bottom controls
                 VStack(spacing: 20) {
-                    if !timerManager.isRunning && imageSaver.imagesSaved < maxImages {
-                        Button("Start Collection") {
-                            startDataCollection()
-                        }
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(15)
-                    } else if imageSaver.imagesSaved >= maxImages {
-                        Text("Collection Complete!")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.green)
-                            .cornerRadius(15)
-                    } else if timerManager.isRunning {
+                    if timerManager.isRunning {
                         if timerManager.isCountdownPhase {
                             Text("Position camera and hold steady")
                                 .font(.headline)
@@ -95,7 +71,7 @@ struct ContentView: View {
                                 .background(Color.black.opacity(0.5))
                                 .cornerRadius(10)
                         } else {
-                            Text("Taking photos...")
+                            Text("Taking photos every 5 seconds...")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .padding()
@@ -104,12 +80,7 @@ struct ContentView: View {
                         }
                     }
                     
-                    Text("Images saved: \(imageSaver.imagesSaved)/\(maxImages)")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(10)
+
                     
                     if imageSaver.isSaving {
                         VStack {
@@ -123,16 +94,45 @@ struct ContentView: View {
                         .background(Color.black.opacity(0.5))
                         .cornerRadius(10)
                     }
+                    
+                    // Roboflow status
+                    VStack(spacing: 8) {
+                        HStack {
+                            Circle()
+                                .fill(roboflowManager.isModelLoaded ? Color.green : Color.red)
+                                .frame(width: 12, height: 12)
+                            Text(roboflowManager.isModelLoaded ? "Model Ready" : "Model Loading...")
+                                .font(.caption)
+                                .foregroundColor(.white)
+                        }
+                        
+                        if !roboflowManager.inferenceStatus.isEmpty {
+                            Text(roboflowManager.inferenceStatus)
+                                .font(.caption)
+                                .foregroundColor(.white)
+                        }
+                        
+                        if roboflowManager.lastInferenceResults.count > 0 {
+                            Text("Last detection: \(roboflowManager.lastInferenceResults.count) objects")
+                                .font(.caption)
+                                .foregroundColor(.yellow)
+                        }
+                    }
+                    .padding()
+                    .background(Color.black.opacity(0.5))
+                    .cornerRadius(10)
                 }
                 .padding(.bottom, 50)
             }
         }
         .onAppear {
             requestCameraPermission()
+            // Automatically start continuous capture when app opens
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                startContinuousCapture()
+            }
         }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(maxImages: $maxImages, imageSaver: imageSaver)
-        }
+
         .onReceive(cameraManager.$capturedImage) { image in
             if let image = image {
                 processAndSaveImage(image)
@@ -156,26 +156,22 @@ struct ContentView: View {
         }
     }
     
-    private func startDataCollection() {
-        if imageSaver.imagesSaved >= maxImages {
-            return
-        }
+    private func startContinuousCapture() {
+        isContinuousCapture = true
         
         timerManager.startTimer(
             onCountdownComplete: {
                 // Countdown finished, start taking photos
-                print("Countdown finished, starting photo capture")
+                print("Countdown finished, starting continuous photo capture")
             },
             onPhotoCapture: {
-                // Take a photo
-                if imageSaver.imagesSaved < maxImages {
-                    cameraManager.capturePhoto()
-                } else {
-                    timerManager.stopTimer()
-                }
+                // Take a photo every 5 seconds
+                cameraManager.capturePhoto()
             }
         )
     }
+    
+
     
     private func processAndSaveImage(_ image: UIImage) {
         guard let processedImage = ImageProcessor.processImage(image) else {
@@ -186,42 +182,15 @@ struct ContentView: View {
         let sizeKB = ImageProcessor.getImageSizeKB(processedImage)
         print("Processed image size: \(sizeKB)KB")
         
+        // Save the image
         imageSaver.saveImage(processedImage)
+        
+        // Run inference on the processed image
+        roboflowManager.runInference(on: processedImage)
     }
 }
 
-struct SettingsView: View {
-    @Binding var maxImages: Int
-    @ObservedObject var imageSaver: ImageSaver
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Collection Settings")) {
-                    Stepper("Max Images: \(maxImages)", value: $maxImages, in: 10...100, step: 10)
-                }
-                
-                Section(header: Text("Save Status")) {
-                    Text("Images saved: \(imageSaver.imagesSaved)")
-                    Text(imageSaver.saveStatus)
-                        .foregroundColor(.secondary)
-                }
-                
-                Section {
-                    Button("Reset Counter") {
-                        imageSaver.resetCounter()
-                    }
-                    .foregroundColor(.red)
-                }
-            }
-            .navigationTitle("Settings")
-            .navigationBarItems(trailing: Button("Done") {
-                presentationMode.wrappedValue.dismiss()
-            })
-        }
-    }
-}
+
 
 #Preview {
     ContentView()

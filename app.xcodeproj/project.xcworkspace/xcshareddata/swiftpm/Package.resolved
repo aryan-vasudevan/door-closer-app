@@ -1,0 +1,15 @@
+{
+  "originHash" : "ae79a61e62be210b10adab32f36979d8d6ce5486890a65d4a22dcd79fc1cfc3a",
+  "pins" : [
+    {
+      "identity" : "roboflow-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/roboflow/roboflow-swift.git",
+      "state" : {
+        "revision" : "d3b24f1d4ed1510ec40a3af014ca26597997cd26",
+        "version" : "1.2.4"
+      }
+    }
+  ],
+  "version" : 3
+}
