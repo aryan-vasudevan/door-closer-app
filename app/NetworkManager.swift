@@ -6,7 +6,7 @@ class NetworkManager: ObservableObject {
     @Published var connectionStatus = "Not connected"
     
     // ESP32 server configuration - update with your ESP32's IP address
-    private let esp32IPAddress = "10.0.0.29" // Update this with your ESP32's IP
+    private let esp32IPAddress = "10.0.0.214" // Update this with your ESP32's IP
     private let esp32Port = 80
     
     func sendDoorState(_ state: String) {
@@ -78,3 +78,7 @@ class NetworkManager: ObservableObject {
         }.resume()
     }
 }
+
+
+
+

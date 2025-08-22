@@ -40,8 +40,8 @@ class TimerManager: ObservableObject {
         // Call the countdown complete callback
         onCountdownComplete?()
         
-        // Start photo capture timer (take photo every 5 seconds)
-        photoTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        // Start photo capture timer (take photo every 50 seconds - allows full actuator cycle)
+        photoTimer = Timer.scheduledTimer(withTimeInterval: 50.0, repeats: true) { [weak self] _ in
             DispatchQueue.main.async {
                 self?.photosTaken += 1
                 self?.onPhotoCapture?()

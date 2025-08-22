@@ -71,7 +71,7 @@ struct ContentView: View {
                                 .background(Color.black.opacity(0.5))
                                 .cornerRadius(10)
                         } else {
-                            Text("Taking photos every 5 seconds...")
+                            Text("Taking photos every 50 seconds...")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .padding()
